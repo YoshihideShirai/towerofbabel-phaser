@@ -10,6 +10,8 @@ export class Game extends Scene {
     floor_height: integer;
     tale_size: integer;
 
+    player: Phaser.GameObjects.Sprite;
+
     constructor() {
         super('Game');
         this.floor_width = 17;
@@ -59,6 +61,7 @@ export class Game extends Scene {
             .setDepth(100)
             .setScrollFactor(0, 0);
 
+        this.player = this.add.sprite(240, 80, "indy_start3").setDisplaySize(this.tale_size,this.tale_size);
         EventBus.emit('current-scene-ready', this);
     }
 
