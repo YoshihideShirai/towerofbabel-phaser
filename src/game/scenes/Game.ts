@@ -23,20 +23,20 @@ export class Game extends Scene {
             .setAlpha(0);
         for (let i = 0; i < this.floor_width; i++) {
             for (let j = 0; j < this.floor_height + 1; j++) {
-                this.background = this.add.image(this.tale_size * i, this.tale_size * j, 'backwall')
+                this.add.image(this.tale_size * i, this.tale_size * j, 'backwall')
                     .setDisplaySize(this.tale_size, this.tale_size)
             }
         }
         for (let j = 0; j < this.floor_height + 1; j++) {
-            this.background = this.add.image(0, 0 + j * this.tale_size, 'sidewall')
+            this.add.image(0, 0 + j * this.tale_size, 'sidewall')
                 .setDisplaySize(this.tale_size, this.tale_size)
-            this.background = this.add.image((this.floor_width - 1) * this.tale_size, 0 + j * this.tale_size, 'sidewall')
+            this.add.image((this.floor_width - 1) * this.tale_size, 0 + j * this.tale_size, 'sidewall')
                 .setDisplaySize(this.tale_size, this.tale_size)
         }
         for (let i = 0; i < this.floor_width; i++) {
-            this.background = this.add.image(0 + i * this.tale_size, 0, 'sidewall')
+            this.add.image(0 + i * this.tale_size, 0, 'sidewall')
                 .setDisplaySize(this.tale_size, this.tale_size)
-            this.background = this.add.image(0 + i * this.tale_size, this.floor_height * this.tale_size, 'needle')
+            this.add.image(0 + i * this.tale_size, this.floor_height * this.tale_size, 'needle')
                 .setDisplaySize(this.tale_size, this.tale_size)
         }
     }
