@@ -19,20 +19,25 @@ export class Game extends Scene {
 
 
     draw_floor() {
-        this.background = this.add.image(512, 384, 'background');
-        this.background.setAlpha(0);
+        this.background = this.add.image(512, 384, 'background')
+            .setAlpha(0);
         for (let i = 0; i < this.floor_width; i++) {
             for (let j = 0; j < this.floor_height + 1; j++) {
-                this.background = this.add.image(this.tale_size * i, this.tale_size * j, 'backwall').setDisplaySize(this.tale_size, this.tale_size)
+                this.background = this.add.image(this.tale_size * i, this.tale_size * j, 'backwall')
+                    .setDisplaySize(this.tale_size, this.tale_size)
             }
         }
         for (let j = 0; j < this.floor_height + 1; j++) {
-            this.background = this.add.image(0, 0 + j * this.tale_size, 'sidewall').setDisplaySize(this.tale_size, this.tale_size)
-            this.background = this.add.image((this.floor_width - 1) * this.tale_size, 0 + j * this.tale_size, 'sidewall').setDisplaySize(this.tale_size, this.tale_size)
+            this.background = this.add.image(0, 0 + j * this.tale_size, 'sidewall')
+                .setDisplaySize(this.tale_size, this.tale_size)
+            this.background = this.add.image((this.floor_width - 1) * this.tale_size, 0 + j * this.tale_size, 'sidewall')
+                .setDisplaySize(this.tale_size, this.tale_size)
         }
         for (let i = 0; i < this.floor_width; i++) {
-            this.background = this.add.image(0 + i * this.tale_size, 0, 'sidewall').setDisplaySize(this.tale_size, this.tale_size)
-            this.background = this.add.image(0 + i * this.tale_size, this.floor_height * this.tale_size, 'needle').setDisplaySize(this.tale_size, this.tale_size)
+            this.background = this.add.image(0 + i * this.tale_size, 0, 'sidewall')
+                .setDisplaySize(this.tale_size, this.tale_size)
+            this.background = this.add.image(0 + i * this.tale_size, this.floor_height * this.tale_size, 'needle')
+                .setDisplaySize(this.tale_size, this.tale_size)
         }
     }
 
@@ -42,8 +47,6 @@ export class Game extends Scene {
         this.camera = this.cameras.main;
         this.camera.setBackgroundColor(0x000000);
 
-        EventBus.emit('current-scene-ready', this);
-
         this.cameras.main.zoom = 1;
         this.cameras.main.centerOn(this.floor_width * this.tale_size / 2 - this.tale_size / 2, 13 * this.tale_size / 2 - this.tale_size / 2);
 
@@ -51,8 +54,12 @@ export class Game extends Scene {
             fontFamily: 'Arial Black', fontSize: this.tale_size / 2, color: '#ffffff',
             stroke: '#000000', strokeThickness: 4,
             align: 'center'
-        }).setOrigin(0.5).setDepth(100);
-        this.gameText.setScrollFactor(0, 0);
+        })
+            .setOrigin(0.5)
+            .setDepth(100)
+            .setScrollFactor(0, 0);
+
+        EventBus.emit('current-scene-ready', this);
     }
 
     changeScene() {
