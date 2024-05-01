@@ -1,7 +1,6 @@
 import { EventBus } from '../EventBus';
 import { Scene } from 'phaser';
 import * as yaml from 'js-yaml';
-import { stat } from 'fs/promises';
 
 type FloorConfig = {
     name: string,
@@ -28,23 +27,19 @@ export class Game extends Scene {
     floorHeight: integer;
     taleSize: integer;
 
-    staticWall: Phaser.Physics.Arcade.StaticGroup;
+    wallGroup: Phaser.Physics.Arcade.StaticGroup;
+    gatesGroup: Phaser.Physics.Arcade.StaticGroup;
+    ivysGroup: Phaser.Physics.Arcade.StaticGroup;
+    floorsGroup: Phaser.Physics.Arcade.StaticGroup;
+    blocksGroup: Phaser.Physics.Arcade.Group;
 
     player: Phaser.GameObjects.Sprite;
-    gates: Phaser.GameObjects.Sprite[];
-    ivys: Phaser.GameObjects.Sprite[];
-    floors: Phaser.GameObjects.Sprite[];
-    blocks: Phaser.GameObjects.Sprite[];
 
     constructor() {
         super('Game');
         this.floorWidth = 17;
         this.floorHeight = 12;
         this.taleSize = 64;
-        this.gates = [];
-        this.ivys = [];
-        this.floors = [];
-        this.blocks = [];
     }
 
     preload() {
@@ -58,10 +53,26 @@ export class Game extends Scene {
         this.floorHeight = this.floorConfig.height;
     }
 
+    addSpriteFromConfigIdx(x: integer, y: integer, texture: string): Phaser.GameObjects.Sprite {
+        let idxs = { x: (2 + x) * this.taleSize / 2, y: (2 + y) * this.taleSize / 2 };
+        return this.add.sprite(idxs.x, idxs.y, texture)
+            .setDisplaySize(this.taleSize, this.taleSize);
+    }
+
+    addStaticGroupFromConfigIdx(grp: Phaser.Physics.Arcade.StaticGroup, x: integer, y: integer, texture: string): Phaser.GameObjects.Sprite {
+        let idxs = { x: (2 + x) * this.taleSize / 2, y: (2 + y) * this.taleSize / 2 };
+        return grp.create(idxs.x, idxs.y, texture)
+            .setSize(this.taleSize, this.taleSize)
+            .setDisplaySize(this.taleSize, this.taleSize);
+    }
+
+    addGroupFromConfigIdx(grp: Phaser.Physics.Arcade.Group, x: integer, y: integer, texture: string): Phaser.GameObjects.Sprite {
+        let idxs = { x: (2 + x) * this.taleSize / 2, y: (2 + y) * this.taleSize / 2 };
+        return grp.create(idxs.x, idxs.y, texture)
+            .setDisplaySize(this.taleSize, this.taleSize);
+    }
+
     drawBackwall() {
-        this.staticWall = this.physics.add.staticGroup({
-            key: 'staticwall'
-        });
         this.background = this.add.image(512, 384, 'background')
             .setAlpha(0);
         for (let i = 0; i < this.floorWidth; i++) {
@@ -71,45 +82,51 @@ export class Game extends Scene {
             }
         }
         for (let j = 0; j < this.floorHeight + 1; j++) {
-            this.staticWall.create(0, 0 + j * this.taleSize, 'sidewall')
-                .setSize(this.taleSize, this.taleSize)
-                .setDisplaySize(this.taleSize, this.taleSize);
-            this.staticWall.create((this.floorWidth - 1) * this.taleSize, 0 + j * this.taleSize, 'sidewall')
-                .setSize(this.taleSize, this.taleSize)
-                .setDisplaySize(this.taleSize, this.taleSize);
+            this.addStaticGroupFromConfigIdx(this.wallGroup, -2, -2 + j * 2, 'sidewall');
+            this.addStaticGroupFromConfigIdx(this.wallGroup, (this.floorWidth - 2) * 2, -2 + j * 2, 'sidewall');
         }
         for (let i = 0; i < this.floorWidth; i++) {
-            this.staticWall.create(0 + i * this.taleSize, 0, 'sidewall')
-                .setSize(this.taleSize, this.taleSize)
-                .setDisplaySize(this.taleSize, this.taleSize);
-            this.add.image(0 + i * this.taleSize, this.floorHeight * this.taleSize, 'needle')
+            this.addStaticGroupFromConfigIdx(this.wallGroup, -2 + i * 2, -2, 'sidewall');
+        }
+        for (let i = 0; i < this.floorWidth - 2; i++) {
+            this.add.image(this.taleSize + i * this.taleSize, this.floorHeight * this.taleSize, 'needle')
                 .setSize(this.taleSize, this.taleSize)
                 .setDisplaySize(this.taleSize, this.taleSize);
         }
-    }
-
-    addSpriteFromConfigIdx(x: integer, y: integer, texture: string): Phaser.GameObjects.Sprite {
-        let idxs = { x: (2 + x) * this.taleSize / 2, y: (2 + y) * this.taleSize / 2 };
-        return this.add.sprite(idxs.x, idxs.y, texture).setDisplaySize(this.taleSize, this.taleSize);
     }
 
     drawSprite() {
         this.floorConfig.ivys.forEach(ele => {
-            this.ivys.push(this.addSpriteFromConfigIdx(ele.x, ele.y, 'ivy'));
+            this.addStaticGroupFromConfigIdx(this.ivysGroup, ele.x, ele.y, 'ivy')
         });
         this.floorConfig.gates.forEach(ele => {
-            this.gates.push(this.addSpriteFromConfigIdx(ele.x, ele.y, 'gate'));
+            this.addStaticGroupFromConfigIdx(this.gatesGroup, ele.x, ele.y, 'gate')
         });
         this.floorConfig.floors.forEach(ele => {
-            this.floors.push(this.addSpriteFromConfigIdx(ele.x, ele.y, 'floor'));
+            this.addStaticGroupFromConfigIdx(this.floorsGroup, ele.x, ele.y, 'floor')
         });
         this.floorConfig.blocks.forEach(ele => {
-            this.blocks.push(this.addSpriteFromConfigIdx(ele.x, ele.y, 'block_' + ele.d));
+            this.addGroupFromConfigIdx(this.blocksGroup, ele.x, ele.y, 'block_' + ele.d)
         });
         this.player = this.addSpriteFromConfigIdx(this.floorConfig.indy.x, this.floorConfig.indy.y, "indy_start3");
     }
 
     create() {
+        this.wallGroup = this.physics.add.staticGroup({
+            key: 'wallGroup'
+        });
+        this.gatesGroup = this.physics.add.staticGroup({
+            key: 'gatesGroup'
+        });
+        this.ivysGroup = this.physics.add.staticGroup({
+            key: 'ivysGroup'
+        });
+        this.floorsGroup = this.physics.add.staticGroup({
+            key: 'floorsGroup'
+        });
+        this.blocksGroup = this.physics.add.group({
+            key: 'blocksGroup'
+        });
         this.fetchFloorData();
         this.drawBackwall();
 
