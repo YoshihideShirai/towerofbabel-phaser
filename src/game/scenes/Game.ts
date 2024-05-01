@@ -20,7 +20,7 @@ export class Game extends Scene {
     }
 
 
-    draw_floor() {
+    drawFloor() {
         this.background = this.add.image(512, 384, 'background')
             .setAlpha(0);
         for (let i = 0; i < this.floor_width; i++) {
@@ -44,7 +44,7 @@ export class Game extends Scene {
     }
 
     create() {
-        this.draw_floor()
+        this.drawFloor()
 
         this.camera = this.cameras.main;
         this.camera.setBackgroundColor(0x000000);
