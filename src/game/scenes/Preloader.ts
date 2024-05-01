@@ -25,11 +25,8 @@ export class Preloader extends Scene {
     }
 
     preload() {
-        //  Load the assets for the game - Replace with your own assets
-        this.load.setPath('assets');
-
-        this.load.image('logo', 'logo.png');
-        this.load.image('star', 'star.png');
+        this.load.image('logo', 'assets/logo.png');
+        this.load.image('star', 'assets/star.png');
         const images: string[] = [
             "babels_left0",
             "babels_left1",
@@ -103,7 +100,7 @@ export class Preloader extends Scene {
             "uru_right_stand2",
         ];
         images.forEach(element => {
-            this.load.image(element, element + '.png')
+            this.load.image(element, 'assets/' + element + '.png')
         });
     }
 

@@ -1,5 +1,6 @@
 import { EventBus } from '../EventBus';
 import { Scene } from 'phaser';
+import * as yaml from 'js-yaml';
 
 export class Game extends Scene {
     camera: Phaser.Cameras.Scene2D.Camera;
@@ -19,6 +20,16 @@ export class Game extends Scene {
         this.tale_size = 64
     }
 
+    preload(){
+        this.load.text('towerconfig','towers/front.yml')
+    }
+
+    fetchFloorData(){
+        let text = this.cache.text.get('towerconfig');
+        let data = yaml.load(text);
+        console.log(text)
+        console.log(data)
+    }
 
     drawFloor() {
         this.background = this.add.image(512, 384, 'background')
@@ -44,6 +55,7 @@ export class Game extends Scene {
     }
 
     create() {
+        this.fetchFloorData()
         this.drawFloor()
 
         this.camera = this.cameras.main;
@@ -61,7 +73,7 @@ export class Game extends Scene {
             .setDepth(100)
             .setScrollFactor(0, 0);
 
-        this.player = this.add.sprite(240, 80, "indy_start3").setDisplaySize(this.tale_size,this.tale_size);
+        this.player = this.add.sprite(240, 80, "indy_start3").setDisplaySize(this.tale_size, this.tale_size);
         EventBus.emit('current-scene-ready', this);
     }
 
