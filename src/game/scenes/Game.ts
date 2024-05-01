@@ -1,6 +1,7 @@
 import { EventBus } from '../EventBus';
 import { Scene } from 'phaser';
 import * as yaml from 'js-yaml';
+import { stat } from 'fs/promises';
 
 type FloorConfig = {
     name: string,
@@ -22,10 +23,12 @@ export class Game extends Scene {
     background: Phaser.GameObjects.Image;
     gameText: Phaser.GameObjects.Text;
 
-    floorConfig: FloorConfig
+    floorConfig: FloorConfig;
     floorWidth: integer;
     floorHeight: integer;
     taleSize: integer;
+
+    staticWall: Phaser.Physics.Arcade.StaticGroup;
 
     player: Phaser.GameObjects.Sprite;
     gates: Phaser.GameObjects.Sprite[];
@@ -45,7 +48,7 @@ export class Game extends Scene {
     }
 
     preload() {
-        this.load.text('tower.config', 'towers/front.yml')
+        this.load.text('tower.config', 'towers/front.yml');
     }
 
     fetchFloorData() {
@@ -56,52 +59,59 @@ export class Game extends Scene {
     }
 
     drawBackwall() {
+        this.staticWall = this.physics.add.staticGroup({
+            key: 'staticwall'
+        });
         this.background = this.add.image(512, 384, 'background')
             .setAlpha(0);
         for (let i = 0; i < this.floorWidth; i++) {
             for (let j = 0; j < this.floorHeight + 1; j++) {
                 this.add.image(this.taleSize * i, this.taleSize * j, 'backwall')
-                    .setDisplaySize(this.taleSize, this.taleSize)
+                    .setDisplaySize(this.taleSize, this.taleSize);
             }
         }
         for (let j = 0; j < this.floorHeight + 1; j++) {
-            this.add.image(0, 0 + j * this.taleSize, 'sidewall')
-                .setDisplaySize(this.taleSize, this.taleSize)
-            this.add.image((this.floorWidth - 1) * this.taleSize, 0 + j * this.taleSize, 'sidewall')
-                .setDisplaySize(this.taleSize, this.taleSize)
+            this.staticWall.create(0, 0 + j * this.taleSize, 'sidewall')
+                .setSize(this.taleSize, this.taleSize)
+                .setDisplaySize(this.taleSize, this.taleSize);
+            this.staticWall.create((this.floorWidth - 1) * this.taleSize, 0 + j * this.taleSize, 'sidewall')
+                .setSize(this.taleSize, this.taleSize)
+                .setDisplaySize(this.taleSize, this.taleSize);
         }
         for (let i = 0; i < this.floorWidth; i++) {
-            this.add.image(0 + i * this.taleSize, 0, 'sidewall')
-                .setDisplaySize(this.taleSize, this.taleSize)
+            this.staticWall.create(0 + i * this.taleSize, 0, 'sidewall')
+                .setSize(this.taleSize, this.taleSize)
+                .setDisplaySize(this.taleSize, this.taleSize);
             this.add.image(0 + i * this.taleSize, this.floorHeight * this.taleSize, 'needle')
-                .setDisplaySize(this.taleSize, this.taleSize)
+                .setSize(this.taleSize, this.taleSize)
+                .setDisplaySize(this.taleSize, this.taleSize);
         }
     }
 
     addSpriteFromConfigIdx(x: integer, y: integer, texture: string): Phaser.GameObjects.Sprite {
-        let idxs = { x: (2 + x) * this.taleSize / 2, y: (2 + y) * this.taleSize / 2 }
+        let idxs = { x: (2 + x) * this.taleSize / 2, y: (2 + y) * this.taleSize / 2 };
         return this.add.sprite(idxs.x, idxs.y, texture).setDisplaySize(this.taleSize, this.taleSize);
     }
 
     drawSprite() {
         this.floorConfig.ivys.forEach(ele => {
-            this.ivys.push(this.addSpriteFromConfigIdx(ele.x, ele.y, 'ivy'))
+            this.ivys.push(this.addSpriteFromConfigIdx(ele.x, ele.y, 'ivy'));
         });
         this.floorConfig.gates.forEach(ele => {
-            this.gates.push(this.addSpriteFromConfigIdx(ele.x, ele.y, 'gate'))
+            this.gates.push(this.addSpriteFromConfigIdx(ele.x, ele.y, 'gate'));
         });
         this.floorConfig.floors.forEach(ele => {
-            this.floors.push(this.addSpriteFromConfigIdx(ele.x, ele.y, 'floor'))
+            this.floors.push(this.addSpriteFromConfigIdx(ele.x, ele.y, 'floor'));
         });
         this.floorConfig.blocks.forEach(ele => {
-            this.blocks.push(this.addSpriteFromConfigIdx(ele.x, ele.y, 'block_' + ele.d))
+            this.blocks.push(this.addSpriteFromConfigIdx(ele.x, ele.y, 'block_' + ele.d));
         });
-        this.player = this.addSpriteFromConfigIdx(this.floorConfig.indy.x, this.floorConfig.indy.y, "indy_start3")
+        this.player = this.addSpriteFromConfigIdx(this.floorConfig.indy.x, this.floorConfig.indy.y, "indy_start3");
     }
 
     create() {
-        this.fetchFloorData()
-        this.drawBackwall()
+        this.fetchFloorData();
+        this.drawBackwall();
 
         this.camera = this.cameras.main;
         this.camera.setBackgroundColor(0x000000);
@@ -118,7 +128,7 @@ export class Game extends Scene {
             .setDepth(100)
             .setScrollFactor(0, 0);
 
-        this.drawSprite()
+        this.drawSprite();
         EventBus.emit('current-scene-ready', this);
     }
 
