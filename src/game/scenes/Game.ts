@@ -33,7 +33,7 @@ export class Game extends Scene {
     floorsGroup: Phaser.Physics.Arcade.StaticGroup;
     blocksGroup: Phaser.Physics.Arcade.Group;
 
-    player: Phaser.GameObjects.Sprite;
+    player: Phaser.Physics.Arcade.Sprite;
 
     constructor() {
         super('Game');
@@ -57,9 +57,9 @@ export class Game extends Scene {
         return { x: (2 + x) * this.taleSize / 2, y: (2 + y) * this.taleSize / 2 };
     }
 
-    addSpriteFromConfigIdx(x: integer, y: integer, texture: string): Phaser.GameObjects.Sprite {
+    addSpriteFromConfigIdx(x: integer, y: integer, texture: string): Phaser.Physics.Arcade.Sprite {
         let idxs = this.configIdx2drawIdx(x, y);
-        return this.add.sprite(idxs.x, idxs.y, texture)
+        return this.physics.add.sprite(idxs.x, idxs.y, texture)
             .setDisplaySize(this.taleSize, this.taleSize);
     }
 
@@ -173,6 +173,19 @@ export class Game extends Scene {
         EventBus.emit('current-scene-ready', this);
     }
 
+    update() {
+        let keyboard = this.input.keyboard;
+        if (keyboard !== null) {
+            let cursors = keyboard.createCursorKeys();
+            if (cursors.left.isDown) {
+                this.player.setVelocityX(-200);
+            } else if (cursors.right.isDown) {
+                this.player.setVelocityX(200);
+            } else {
+                this.player.setVelocityX(0);
+            }
+        }
+    }
     changeScene() {
         this.scene.start('GameOver');
     }
