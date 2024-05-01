@@ -97,16 +97,16 @@ export class Game extends Scene {
 
     drawSprite() {
         this.floorConfig.ivys.forEach(ele => {
-            this.addStaticGroupFromConfigIdx(this.ivysGroup, ele.x, ele.y, 'ivy')
+            this.addStaticGroupFromConfigIdx(this.ivysGroup, ele.x, ele.y, 'ivy');
         });
         this.floorConfig.gates.forEach(ele => {
-            this.addStaticGroupFromConfigIdx(this.gatesGroup, ele.x, ele.y, 'gate')
+            this.addStaticGroupFromConfigIdx(this.gatesGroup, ele.x, ele.y, 'gate');
         });
         this.floorConfig.floors.forEach(ele => {
-            this.addStaticGroupFromConfigIdx(this.floorsGroup, ele.x, ele.y, 'floor')
+            this.addStaticGroupFromConfigIdx(this.floorsGroup, ele.x, ele.y, 'floor');
         });
         this.floorConfig.blocks.forEach(ele => {
-            this.addGroupFromConfigIdx(this.blocksGroup, ele.x, ele.y, 'block_' + ele.d)
+            this.addGroupFromConfigIdx(this.blocksGroup, ele.x, ele.y, 'block_' + ele.d);
         });
         this.player = this.addSpriteFromConfigIdx(this.floorConfig.indy.x, this.floorConfig.indy.y, "indy_start3");
     }
