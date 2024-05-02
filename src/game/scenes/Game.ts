@@ -17,6 +17,52 @@ type TowerConfig = {
     floors: FloorConfig[],
 }
 
+class Player extends Phaser.Physics.Arcade.Sprite {
+    state: "starting" | "goal" | "stand" | "lifting" | "lifted" | "walking" | "criming" | "falling" | "killed";
+    game: Game;
+
+    constructor(config: { game: Game, x: integer, y: integer }) {
+        let idxs = config.game.configIdx2drawIdx(config.x, config.y);
+        super(config.game, idxs.x, idxs.y, "indy_start0");
+        this.game = config.game;
+        this.game.add.existing(this);
+        this.game.physics.add.existing(this, false);
+        this.setBodySize(this.game.taleSize / 4, this.game.taleSize / 2);
+        this.setDisplaySize(this.game.taleSize, this.game.taleSize);
+        this.createAnims();
+        this.play('indy_start');
+    }
+
+    createAnims() {
+        this.game.anims.create({
+            key: 'indy_start',
+            frames: [
+                { key: "indy_start0", duration: 1000, visible: true },
+                { key: "indy_start1", duration: 1000, visible: true },
+                { key: "indy_start2", duration: 1000, visible: true },
+                { key: "indy_start3", duration: 0, visible: true },
+            ],
+            frameRate: 8,
+        });
+    }
+
+    isActive(): boolean {
+        if (this.state == "starting") {
+            return false;
+        }
+        if (this.state == "goal") {
+            return false;
+        }
+        if (this.state == "killed") {
+            return false;
+        }
+        return true;
+    }
+
+    update() {
+    }
+}
+
 export class Game extends Scene {
     camera: Phaser.Cameras.Scene2D.Camera;
     background: Phaser.GameObjects.Image;
@@ -33,7 +79,7 @@ export class Game extends Scene {
     floorsGroup: Phaser.Physics.Arcade.StaticGroup;
     blocksGroup: Phaser.Physics.Arcade.Group;
 
-    player: Phaser.Physics.Arcade.Sprite;
+    player: Player;
 
     constructor() {
         super('Game');
@@ -132,7 +178,7 @@ export class Game extends Scene {
         this.floorConfig.blocks.forEach(ele => {
             this.groupAddSpriteFromConfigIdx(this.blocksGroup, ele.x, ele.y, 'block_' + ele.d);
         });
-        this.player = this.addSpriteFromConfigIdx(this.floorConfig.indy.x, this.floorConfig.indy.y, "indy_start3");
+        this.player = new Player({ game: this, x: this.floorConfig.indy.x, y: this.floorConfig.indy.y })
     }
 
     create() {
@@ -170,6 +216,8 @@ export class Game extends Scene {
             .setScrollFactor(0, 0);
 
         this.drawSprite();
+        this.physics.add.collider(this.blocksGroup, this.floorsGroup)
+        this.physics.add.collider(this.player, this.floorsGroup)
         EventBus.emit('current-scene-ready', this);
     }
 
@@ -188,6 +236,8 @@ export class Game extends Scene {
     }
 
     update() {
+        this.player.update();
+        this.player.setVelocityY(200);
         let keys = this.addKeys();
         if (keys !== null) {
             if (keys['left'].isDown) {
