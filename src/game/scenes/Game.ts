@@ -5,6 +5,7 @@ import * as yaml from 'js-yaml';
 type FloorConfig = {
     name: string,
     height: integer,
+    power: integer,
     indy: { x: integer, y: integer },
     gates: { x: integer, y: integer }[],
     ivys: { x: integer, y: integer }[],
@@ -19,31 +20,109 @@ type TowerConfig = {
 
 class Player extends Phaser.Physics.Arcade.Sprite {
     state: "starting" | "goal" | "stand" | "lifting" | "lifted" | "walking" | "criming" | "falling" | "killed";
+    direction: "left" | "right"
     game: Game;
+    power: integer;
 
     constructor(config: { game: Game, x: integer, y: integer }) {
         let idxs = config.game.configIdx2drawIdx(config.x, config.y);
         super(config.game, idxs.x, idxs.y, "indy_start0");
+        this.power = 0;
         this.game = config.game;
         this.game.add.existing(this);
         this.game.physics.add.existing(this, false);
         this.setBodySize(this.game.taleSize / 4, this.game.taleSize / 2);
         this.setDisplaySize(this.game.taleSize, this.game.taleSize);
         this.createAnims();
-        this.play('indy_start');
+        this.state = "starting";
+        this.direction = "right";
+        this.play('indy_starting');
     }
 
     createAnims() {
         this.game.anims.create({
-            key: 'indy_start',
+            key: 'indy_starting',
             frames: [
                 { key: "indy_start0", duration: 1000, visible: true },
                 { key: "indy_start1", duration: 1000, visible: true },
                 { key: "indy_start2", duration: 1000, visible: true },
                 { key: "indy_start3", duration: 0, visible: true },
             ],
-            frameRate: 8,
         });
+        this.game.anims.create({
+            key: 'indy_right_killed',
+            frames: [
+                { key: "indy_right_dead0", duration: 1000, visible: true },
+                { key: "indy_right_dead1", duration: 1000, visible: true },
+                { key: "indy_right_dead2", duration: 1000, visible: true },
+            ],
+        });
+        this.game.anims.create({
+            key: 'indy_left_killed',
+            frames: [
+                { key: "indy_left_dead0", duration: 1000, visible: true },
+                { key: "indy_left_dead1", duration: 1000, visible: true },
+                { key: "indy_left_dead2", duration: 1000, visible: true },
+            ],
+        });
+        this.game.anims.create({
+            key: 'indy_right_walking',
+            frames: [
+                { key: "indy_right_stand0", duration: 100, visible: true },
+                { key: "indy_right_stand1", duration: 100, visible: true },
+            ],
+            repeat: -1,
+        });
+        this.game.anims.create({
+            key: 'indy_left_walking',
+            frames: [
+                { key: "indy_left_stand0", duration: 100, visible: true },
+                { key: "indy_left_stand1", duration: 100, visible: true },
+            ],
+            repeat: -1,
+        });
+        this.game.anims.create({
+            key: 'indy_right_fall',
+            frames: [
+                { key: "indy_right_fall0", duration: 100, visible: true },
+                { key: "indy_right_fall1", duration: 100, visible: true },
+            ],
+            repeat: -1,
+        });
+        this.game.anims.create({
+            key: 'indy_left_fall',
+            frames: [
+                { key: "indy_left_fall0", duration: 100, visible: true },
+                { key: "indy_left_fall1", duration: 100, visible: true },
+            ],
+            repeat: -1,
+        });
+    }
+
+    keyRightDown() {
+        super.setVelocityX(300);
+        if ( this.state !== "walking" || this.direction !== "right"){
+            this.play("indy_right_walking");
+        }
+        this.state = "walking";
+        this.direction = "right";
+    }
+
+    keyLeftDown() {
+        super.setVelocityX(-300);
+        if ( this.state !== "walking" || this.direction !== "left"){
+            this.play("indy_left_walking");
+        }
+        this.state = "walking";
+        this.direction = "left";
+    }
+
+    nokeyDown() {
+        super.setVelocityX(0);
+        if (this.isActive()) {
+            this.setTexture("indy_" + this.direction + "_stand0")
+            this.state = "stand";
+        }
     }
 
     isActive(): boolean {
@@ -58,15 +137,12 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         }
         return true;
     }
-
-    update() {
-    }
 }
 
 export class Game extends Scene {
     camera: Phaser.Cameras.Scene2D.Camera;
     background: Phaser.GameObjects.Image;
-    gameText: Phaser.GameObjects.Text;
+    powerText: Phaser.GameObjects.Text;
 
     floorConfig: FloorConfig;
     floorWidth: integer;
@@ -178,7 +254,8 @@ export class Game extends Scene {
         this.floorConfig.blocks.forEach(ele => {
             this.groupAddSpriteFromConfigIdx(this.blocksGroup, ele.x, ele.y, 'block_' + ele.d);
         });
-        this.player = new Player({ game: this, x: this.floorConfig.indy.x, y: this.floorConfig.indy.y })
+        this.player = new Player({ game: this, x: this.floorConfig.indy.x, y: this.floorConfig.indy.y });
+        this.player.power = this.floorConfig.power;
     }
 
     create() {
@@ -206,7 +283,7 @@ export class Game extends Scene {
         this.cameras.main.zoom = 1;
         this.cameras.main.centerOn(this.floorWidth * this.taleSize / 2 - this.taleSize / 2, 13 * this.taleSize / 2 - this.taleSize / 2);
 
-        this.gameText = this.add.text(this.taleSize * 2, this.taleSize, 'POWER : 20', {
+        this.powerText = this.add.text(this.taleSize * 2, this.taleSize, '', {
             fontFamily: 'Arial Black', fontSize: this.taleSize / 2, color: '#ffffff',
             stroke: '#000000', strokeThickness: 4,
             align: 'center'
@@ -216,8 +293,9 @@ export class Game extends Scene {
             .setScrollFactor(0, 0);
 
         this.drawSprite();
-        this.physics.add.collider(this.blocksGroup, this.floorsGroup)
-        this.physics.add.collider(this.player, this.floorsGroup)
+        this.physics.add.collider(this.blocksGroup, this.floorsGroup);
+        this.physics.add.collider(this.player, this.floorsGroup);
+        this.physics.add.collider(this.player, this.wallGroup);
         EventBus.emit('current-scene-ready', this);
     }
 
@@ -236,16 +314,16 @@ export class Game extends Scene {
     }
 
     update() {
-        this.player.update();
         this.player.setVelocityY(200);
+        this.powerText.setText("POWER : " + this.player.power);
         let keys = this.addKeys();
         if (keys !== null) {
             if (keys['left'].isDown) {
-                this.player.setVelocityX(-200);
+                this.player.keyLeftDown();
             } else if (keys['right'].isDown) {
-                this.player.setVelocityX(200);
+                this.player.keyRightDown();
             } else {
-                this.player.setVelocityX(0);
+                this.player.nokeyDown();
             }
         }
     }

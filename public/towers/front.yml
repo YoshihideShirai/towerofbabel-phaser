@@ -2,6 +2,7 @@ name: '表バベル'
 floors:
     - name: '初めの一歩'
       height: 12
+      power: 20
       indy:
           x: 26
           y: 14
