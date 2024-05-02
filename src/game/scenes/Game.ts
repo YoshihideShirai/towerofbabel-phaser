@@ -10,7 +10,7 @@ type FloorConfig = {
     gates: { x: integer, y: integer }[],
     ivys: { x: integer, y: integer }[],
     floors: { x: integer, y: integer }[],
-    blocks: { x: integer, y: integer, d: string }[],
+    blocks: { x: integer, y: integer, d: "left" | "right" }[],
 }
 
 type TowerConfig = {
@@ -18,9 +18,23 @@ type TowerConfig = {
     floors: FloorConfig[],
 }
 
+class Block extends Phaser.Physics.Arcade.Sprite {
+    direction: "left" | "right";
+    game: Game;
+
+    constructor(config: { game: Game, x: integer, y: integer, direction: "left" | "right" }) {
+        let idxs = config.game.configIdx2drawIdx(config.x, config.y);
+        super(config.game, idxs.x, idxs.y, "block_" + config.direction);
+        this.game = config.game;
+        this.game.add.existing(this);
+        this.game.physics.add.existing(this, false);
+        this.setDisplaySize(this.game.taleSize, this.game.taleSize);
+    }
+}
+
 class Player extends Phaser.Physics.Arcade.Sprite {
     state: "starting" | "goal" | "stand" | "lifting" | "lifted" | "walking" | "criming" | "falling" | "killed";
-    direction: "left" | "right"
+    direction: "left" | "right";
     game: Game;
     power: integer;
 
@@ -80,6 +94,18 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             repeat: -1,
         });
         this.game.anims.create({
+            key: 'indy_right_start_walking',
+            frames: [
+                { key: "indy_right_stand2", duration: 100, visible: true },
+            ],
+        });
+        this.game.anims.create({
+            key: 'indy_left_start_walking',
+            frames: [
+                { key: "indy_left_stand2", duration: 100, visible: true },
+            ],
+        });
+        this.game.anims.create({
             key: 'indy_right_walking',
             frames: [
                 { key: "indy_right_stand0", duration: 100, visible: true },
@@ -115,8 +141,10 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 
     keyRightDown() {
         super.setVelocityX(300);
-        if ( this.state !== "walking" || this.direction !== "right"){
-            this.play("indy_right_walking");
+        if (this.state !== "walking" || this.direction !== "right") {
+            this.play("indy_right_start_walking").once('animationcomplete', () => {
+                this.play("indy_right_walking");
+            });
         }
         this.state = "walking";
         this.direction = "right";
@@ -124,8 +152,10 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 
     keyLeftDown() {
         super.setVelocityX(-300);
-        if ( this.state !== "walking" || this.direction !== "left"){
-            this.play("indy_left_walking");
+        if (this.state !== "walking" || this.direction !== "left") {
+            this.play("indy_left_start_walking").once('animationcomplete', () => {
+                this.play("indy_left_walking");
+            });
         }
         this.state = "walking";
         this.direction = "left";
@@ -266,7 +296,7 @@ export class Game extends Scene {
             this.staticGroupAddRectangleFromConfigIdx(this.floorsGroup, ele.x, ele.y, this.taleSize, this.taleSize / 4);
         });
         this.floorConfig.blocks.forEach(ele => {
-            this.groupAddSpriteFromConfigIdx(this.blocksGroup, ele.x, ele.y, 'block_' + ele.d);
+            this.blocksGroup.add(new Block({ game: this, x: ele.x, y: ele.y, direction: ele.d }));
         });
         this.player = new Player({ game: this, x: this.floorConfig.indy.x, y: this.floorConfig.indy.y });
         this.player.power = this.floorConfig.power;
