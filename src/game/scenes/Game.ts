@@ -66,6 +66,20 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             ],
         });
         this.game.anims.create({
+            key: 'indy_right_stand',
+            frames: [
+                { key: "indy_right_stand0", duration: 100, visible: true },
+            ],
+            repeat: -1,
+        });
+        this.game.anims.create({
+            key: 'indy_left_stand',
+            frames: [
+                { key: "indy_left_stand0", duration: 100, visible: true },
+            ],
+            repeat: -1,
+        });
+        this.game.anims.create({
             key: 'indy_right_walking',
             frames: [
                 { key: "indy_right_stand0", duration: 100, visible: true },
@@ -119,8 +133,8 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 
     nokeyDown() {
         super.setVelocityX(0);
-        if (this.isActive()) {
-            this.setTexture("indy_" + this.direction + "_stand0")
+        if (this.state === "walking") {
+            this.play("indy_" + this.direction + "_stand");
             this.state = "stand";
         }
     }
