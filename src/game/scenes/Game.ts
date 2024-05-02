@@ -173,13 +173,26 @@ export class Game extends Scene {
         EventBus.emit('current-scene-ready', this);
     }
 
-    update() {
+
+    addKeys(): { [key: string]: Phaser.Input.Keyboard.Key } | null {
+        let keys: { [key: string]: Phaser.Input.Keyboard.Key } = {};
         let keyboard = this.input.keyboard;
-        if (keyboard !== null) {
-            let cursors = keyboard.createCursorKeys();
-            if (cursors.left.isDown) {
+        if (keyboard === null) {
+            return keys;
+        }
+        keys['up'] = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+        keys['down'] = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+        keys['left'] = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+        keys['right'] = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+        return keys;
+    }
+
+    update() {
+        let keys = this.addKeys();
+        if (keys !== null) {
+            if (keys['left'].isDown) {
                 this.player.setVelocityX(-200);
-            } else if (cursors.right.isDown) {
+            } else if (keys['right'].isDown) {
                 this.player.setVelocityX(200);
             } else {
                 this.player.setVelocityX(0);
