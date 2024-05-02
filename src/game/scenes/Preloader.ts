@@ -102,6 +102,10 @@ export class Preloader extends Scene {
         images.forEach(element => {
             this.load.image(element, 'assets/' + element + '.png')
         });
+        this.add.graphics()
+            .fillStyle(0xff0000, 0.5)
+            .fillRect(0, 0, 32, 32)
+            .generateTexture("block_sensor", 32, 32);
     }
 
     create() {

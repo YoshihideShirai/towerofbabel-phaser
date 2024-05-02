@@ -21,14 +21,31 @@ type TowerConfig = {
 class Block extends Phaser.Physics.Arcade.Sprite {
     direction: "left" | "right";
     game: Game;
+    sensor: Phaser.Physics.Arcade.Sprite[];
 
     constructor(config: { game: Game, x: integer, y: integer, direction: "left" | "right" }) {
         let idxs = config.game.configIdx2drawIdx(config.x, config.y);
         super(config.game, idxs.x, idxs.y, "block_" + config.direction);
         this.game = config.game;
+        this.direction = config.direction;
         this.game.add.existing(this);
         this.game.physics.add.existing(this, false);
         this.setDisplaySize(this.game.taleSize, this.game.taleSize);
+
+        this.sensor = [
+            this.game.physics.add.sprite(
+                idxs.x + this.game.taleSize / 4,
+                idxs.y + this.game.taleSize / 4,
+                "block_sensor"),
+            this.game.physics.add.sprite(
+                idxs.x - this.game.taleSize / 4,
+                idxs.y + this.game.taleSize / 4,
+                "block_sensor"),
+            this.game.physics.add.sprite(
+                this.direction == "left" ? idxs.x - this.game.taleSize / 4 : idxs.x + this.game.taleSize / 4,
+                idxs.y - this.game.taleSize / 4,
+                "block_sensor"),
+        ];
     }
 }
 
