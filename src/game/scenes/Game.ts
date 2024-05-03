@@ -36,15 +36,21 @@ class Block extends Phaser.Physics.Arcade.Sprite {
             this.game.physics.add.sprite(
                 idxs.x + this.game.taleSize / 4,
                 idxs.y + this.game.taleSize / 4,
-                "block_sensor").setPushable(false),
+                "blank")
+                .setAlpha(0.5)
+                .setPushable(false),
             this.game.physics.add.sprite(
                 idxs.x - this.game.taleSize / 4,
                 idxs.y + this.game.taleSize / 4,
-                "block_sensor").setPushable(false),
+                "blank")
+                .setAlpha(0.5)
+                .setPushable(false),
             this.game.physics.add.sprite(
                 this.direction == "left" ? idxs.x - this.game.taleSize / 4 : idxs.x + this.game.taleSize / 4,
                 idxs.y - this.game.taleSize / 4,
-                "block_sensor").setPushable(false),
+                "blank")
+                .setAlpha(0.5)
+                .setPushable(false),
         ];
     }
 }

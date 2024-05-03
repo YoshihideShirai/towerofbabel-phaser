@@ -28,6 +28,7 @@ export class Preloader extends Scene {
         this.load.image('logo', 'assets/logo.png');
         this.load.image('star', 'assets/star.png');
         const images: string[] = [
+            "blank",
             "babels_left0",
             "babels_left1",
             "babels_left_dead",
@@ -102,10 +103,6 @@ export class Preloader extends Scene {
         images.forEach(element => {
             this.load.image(element, 'assets/' + element + '.png')
         });
-        this.add.graphics()
-            .fillStyle(0xff0000, 0.5)
-            .fillRect(0, 0, 32, 32)
-            .generateTexture("block_sensor", 32, 32);
     }
 
     create() {
