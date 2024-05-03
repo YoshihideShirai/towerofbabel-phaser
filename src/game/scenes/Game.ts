@@ -67,7 +67,9 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         this.createAnims();
         this.state = "starting";
         this.direction = "right";
-        this.play('indy_starting');
+        this.play('indy_starting').once('animationcomplete', () => {
+            this.state = "stand";
+        });
     }
 
     createAnims() {
@@ -157,25 +159,29 @@ class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     keyRightDown() {
-        super.setVelocityX(300);
-        if (this.state !== "walking" || this.direction !== "right") {
-            this.play("indy_right_start_walking").once('animationcomplete', () => {
-                this.play("indy_right_walking");
-            });
+        if (this.isWalkable()) {
+            super.setVelocityX(300);
+            if (this.state !== "walking" || this.direction !== "right") {
+                this.play("indy_right_start_walking").once('animationcomplete', () => {
+                    this.play("indy_right_walking");
+                });
+            }
+            this.state = "walking";
+            this.direction = "right";
         }
-        this.state = "walking";
-        this.direction = "right";
     }
 
     keyLeftDown() {
-        super.setVelocityX(-300);
-        if (this.state !== "walking" || this.direction !== "left") {
-            this.play("indy_left_start_walking").once('animationcomplete', () => {
-                this.play("indy_left_walking");
-            });
+        if (this.isWalkable()) {
+            super.setVelocityX(-300);
+            if (this.state !== "walking" || this.direction !== "left") {
+                this.play("indy_left_start_walking").once('animationcomplete', () => {
+                    this.play("indy_left_walking");
+                });
+            }
+            this.state = "walking";
+            this.direction = "left";
         }
-        this.state = "walking";
-        this.direction = "left";
     }
 
     nokeyDown() {
@@ -197,6 +203,15 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             return false;
         }
         return true;
+    }
+    isWalkable(): boolean {
+        if (this.state == "stand") {
+            return true;
+        }
+        if (this.state == "walking") {
+            return true;
+        }
+        return false;
     }
 }
 
