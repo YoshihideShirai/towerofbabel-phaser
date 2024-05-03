@@ -21,11 +21,11 @@ const config: Phaser.Types.Core.GameConfig = {
         GameOver
     ],
     physics: {
-        default: 'arcade',
-        arcade: {
+        default: 'matter',
+        matter: {
             gravity: { x: 0, y: 0 },
             debug: true
-        }
+        },
     }
 };
 
