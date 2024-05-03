@@ -164,6 +164,18 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         });
     }
 
+    update() {
+        if (!this.body?.touching.down) {
+            this.setVelocityX(0);
+            this.state = "falling";
+            this.play("indy_" + this.direction + "_fall");
+        }
+        if (this.body?.touching.down && this.state == "falling") {
+            this.state = "stand";
+            this.play("indy_" + this.direction + "_stand");
+        }
+    }
+    
     keyRightDown() {
         if (this.isWalkable()) {
             super.setVelocityX(300);
@@ -400,6 +412,7 @@ export class Game extends Scene {
     }
 
     update() {
+        this.player.update();
         this.player.setVelocityY(200);
         this.powerText.setText("POWER : " + this.player.power);
         let keys = this.addKeys();
