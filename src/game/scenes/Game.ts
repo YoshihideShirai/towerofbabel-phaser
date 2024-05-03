@@ -36,15 +36,15 @@ class Block extends Phaser.Physics.Arcade.Sprite {
             this.game.physics.add.sprite(
                 idxs.x + this.game.taleSize / 4,
                 idxs.y + this.game.taleSize / 4,
-                "block_sensor"),
+                "block_sensor").setPushable(false),
             this.game.physics.add.sprite(
                 idxs.x - this.game.taleSize / 4,
                 idxs.y + this.game.taleSize / 4,
-                "block_sensor"),
+                "block_sensor").setPushable(false),
             this.game.physics.add.sprite(
                 this.direction == "left" ? idxs.x - this.game.taleSize / 4 : idxs.x + this.game.taleSize / 4,
                 idxs.y - this.game.taleSize / 4,
-                "block_sensor"),
+                "block_sensor").setPushable(false),
         ];
     }
 }
@@ -313,7 +313,10 @@ export class Game extends Scene {
             this.staticGroupAddRectangleFromConfigIdx(this.floorsGroup, ele.x, ele.y, this.taleSize, this.taleSize / 4);
         });
         this.floorConfig.blocks.forEach(ele => {
-            this.blocksGroup.add(new Block({ game: this, x: ele.x, y: ele.y, direction: ele.d }));
+            let block = new Block({ game: this, x: ele.x, y: ele.y, direction: ele.d });
+            block.sensor.forEach(ele => {
+                this.blocksGroup.add(ele);
+            });
         });
         this.player = new Player({ game: this, x: this.floorConfig.indy.x, y: this.floorConfig.indy.y });
         this.player.power = this.floorConfig.power;
@@ -357,6 +360,7 @@ export class Game extends Scene {
         this.physics.add.collider(this.blocksGroup, this.floorsGroup);
         this.physics.add.collider(this.player, this.floorsGroup);
         this.physics.add.collider(this.player, this.wallGroup);
+        this.physics.add.collider(this.player, this.blocksGroup);
         EventBus.emit('current-scene-ready', this);
     }
 
