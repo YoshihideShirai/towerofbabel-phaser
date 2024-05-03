@@ -50,3 +50,6 @@ floors:
           - x: 22
             y: 14
             d: 'right'
+          - x: 24
+            y: 14
+            d: 'left'

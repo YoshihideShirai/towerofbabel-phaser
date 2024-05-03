@@ -57,7 +57,7 @@ class Block extends Phaser.Physics.Arcade.Sprite {
 
 class Player extends Phaser.Physics.Arcade.Sprite {
     state: "starting" | "goal" | "stand" | "lifting" | "lifted" | "walking" | "criming" | "falling" | "killed";
-    direction: "left" | "right";
+    direction: "left" | "right" | "center";
     game: Game;
     power: integer;
 
@@ -72,7 +72,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         this.setDisplaySize(this.game.taleSize, this.game.taleSize);
         this.createAnims();
         this.state = "starting";
-        this.direction = "right";
+        this.direction = "center";
         this.play('indy_starting').once('animationcomplete', () => {
             this.state = "stand";
         });
@@ -85,7 +85,6 @@ class Player extends Phaser.Physics.Arcade.Sprite {
                 { key: "indy_start0", duration: 1000, visible: true },
                 { key: "indy_start1", duration: 1000, visible: true },
                 { key: "indy_start2", duration: 1000, visible: true },
-                { key: "indy_start3", duration: 0, visible: true },
             ],
         });
         this.game.anims.create({
@@ -103,6 +102,13 @@ class Player extends Phaser.Physics.Arcade.Sprite {
                 { key: "indy_left_dead1", duration: 1000, visible: true },
                 { key: "indy_left_dead2", duration: 1000, visible: true },
             ],
+        });
+        this.game.anims.create({
+            key: 'indy_center_stand',
+            frames: [
+                { key: "indy_start3", duration: 100, visible: true },
+            ],
+            repeat: -1,
         });
         this.game.anims.create({
             key: 'indy_right_stand',
@@ -165,17 +171,22 @@ class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     update() {
-        if (!this.body?.touching.down) {
-            this.setVelocityX(0);
-            this.state = "falling";
-            this.play("indy_" + this.direction + "_fall");
-        }
-        if (this.body?.touching.down && this.state == "falling") {
-            this.state = "stand";
-            this.play("indy_" + this.direction + "_stand");
+        if (this.isActive()) {
+            this.setVelocityY(200);
+            if (this.isWalkable()) {
+                if (!this.body?.touching.down) {
+                    this.setVelocityX(0);
+                    this.state = "falling";
+                    this.play("indy_" + this.direction + "_fall");
+                }
+            }
+            if (this.state == "falling") {
+                this.state = "stand";
+                this.play("indy_" + this.direction + "_stand");
+            }
         }
     }
-    
+
     keyRightDown() {
         if (this.isWalkable()) {
             super.setVelocityX(300);
@@ -413,7 +424,6 @@ export class Game extends Scene {
 
     update() {
         this.player.update();
-        this.player.setVelocityY(200);
         this.powerText.setText("POWER : " + this.player.power);
         let keys = this.addKeys();
         if (keys !== null) {
