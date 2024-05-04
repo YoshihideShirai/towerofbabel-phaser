@@ -29,8 +29,9 @@ class Block extends Phaser.Physics.Matter.Sprite {
         this.game = config.game;
         this.direction = config.direction;
         this.game.add.existing(this);
-        this.setDisplaySize(this.game.taleSize, this.game.taleSize);
-
+        this
+            .setDisplaySize(this.game.taleSize, this.game.taleSize)
+            .setFixedRotation();
         this.sensor = [
             this.game.matter.add.sprite(
                 idxs.x + this.game.taleSize / 4,
@@ -63,7 +64,10 @@ class Player extends Phaser.Physics.Matter.Sprite {
         this.power = 0;
         this.game = config.game;
         this.game.add.existing(this);
-        this.setDisplaySize(this.game.taleSize, this.game.taleSize);
+        this
+            .setDisplaySize(this.game.taleSize, this.game.taleSize)
+            .setRectangle(this.game.taleSize/2,this.game.taleSize)
+            .setFixedRotation();
         this.createAnims();
         this.state = "starting";
         this.direction = "center";
@@ -166,7 +170,7 @@ class Player extends Phaser.Physics.Matter.Sprite {
 
     update() {
         if (this.isActive()) {
-            //this.setVelocityY(200);
+            this.setVelocityY(1);
             if (this.isWalkable()) {
                 // if (!this.body?.touching.down) {
                 //     this.setVelocityX(0);
@@ -183,7 +187,7 @@ class Player extends Phaser.Physics.Matter.Sprite {
 
     keyRightDown() {
         if (this.isWalkable()) {
-            super.setVelocityX(300);
+            super.setVelocityX(1);
             if (this.state !== "walking" || this.direction !== "right") {
                 this.play("indy_right_start_walking").once('animationcomplete', () => {
                     this.play("indy_right_walking");
@@ -196,7 +200,7 @@ class Player extends Phaser.Physics.Matter.Sprite {
 
     keyLeftDown() {
         if (this.isWalkable()) {
-            super.setVelocityX(-300);
+            super.setVelocityX(-1);
             if (this.state !== "walking" || this.direction !== "left") {
                 this.play("indy_left_start_walking").once('animationcomplete', () => {
                     this.play("indy_left_walking");
@@ -286,16 +290,18 @@ export class Game extends Scene {
 
     addImageFromConfigIdx(x: integer, y: integer, texture: string): Phaser.GameObjects.Image {
         let idxs = this.configIdx2drawIdx(x, y);
-        return this.add.image(idxs.x, idxs.y, texture)
+        return this.matter.add.image(idxs.x, idxs.y, texture)
             .setSize(this.taleSize, this.taleSize)
-            .setDisplaySize(this.taleSize, this.taleSize);
+            .setDisplaySize(this.taleSize, this.taleSize).setStatic(true);
     }
 
     staticGroupAddSpriteFromConfigIdx(grp: Phaser.GameObjects.Group, x: integer, y: integer, texture: string): Phaser.GameObjects.Sprite {
         let idxs = this.configIdx2drawIdx(x, y);
-        return grp.create(idxs.x, idxs.y, texture)
-            .setSize(this.taleSize, this.taleSize)
-            .setDisplaySize(this.taleSize, this.taleSize);
+        let sprite = this.matter.add.sprite(idxs.x, idxs.y, texture)
+                .setSize(this.taleSize, this.taleSize)
+                .setDisplaySize(this.taleSize, this.taleSize)
+                .setStatic(true)
+        return sprite;
     }
 
     groupAddSpriteFromConfigIdx(grp: Phaser.GameObjects.Group, x: integer, y: integer, texture: string): Phaser.GameObjects.Sprite {
