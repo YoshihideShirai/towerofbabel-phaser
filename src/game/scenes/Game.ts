@@ -18,6 +18,21 @@ type TowerConfig = {
     floors: FloorConfig[],
 }
 
+class Floor extends Phaser.Physics.Matter.Sprite {
+    game: Game;
+
+    constructor(config: { game: Game, x: integer, y: integer }) {
+        let idxs = config.game.configIdx2drawIdx(config.x, config.y);
+        super(config.game.matter.world, idxs.x, idxs.y, "floor");
+        this.game = config.game;
+        this
+            .setDisplaySize(this.game.taleSize, this.game.taleSize / 4)
+            .setY(idxs.y - this.game.taleSize / 2 + this.displayHeight / 2)
+            .setRectangle(this.displayWidth, this.displayHeight)
+            .setStatic(true);
+    }
+}
+
 class Block extends Phaser.Physics.Matter.Sprite {
     direction: "left" | "right";
     game: Game;
@@ -28,26 +43,10 @@ class Block extends Phaser.Physics.Matter.Sprite {
         super(config.game.matter.world, idxs.x, idxs.y, "block_" + config.direction);
         this.game = config.game;
         this.direction = config.direction;
-        this.game.add.existing(this);
         this
             .setDisplaySize(this.game.taleSize, this.game.taleSize)
             .setFixedRotation();
         this.sensor = [
-            this.game.matter.add.sprite(
-                idxs.x + this.game.taleSize / 4,
-                idxs.y + this.game.taleSize / 4,
-                "blank")
-                .setAlpha(0.5),
-            this.game.matter.add.sprite(
-                idxs.x - this.game.taleSize / 4,
-                idxs.y + this.game.taleSize / 4,
-                "blank")
-                .setAlpha(0.5),
-            this.game.matter.add.sprite(
-                this.direction == "left" ? idxs.x - this.game.taleSize / 4 : idxs.x + this.game.taleSize / 4,
-                idxs.y - this.game.taleSize / 4,
-                "blank")
-                .setAlpha(0.5),
         ];
     }
 }
@@ -63,10 +62,9 @@ class Player extends Phaser.Physics.Matter.Sprite {
         super(config.game.matter.world, idxs.x, idxs.y, "indy_start0");
         this.power = 0;
         this.game = config.game;
-        this.game.add.existing(this);
         this
             .setDisplaySize(this.game.taleSize, this.game.taleSize)
-            .setRectangle(this.game.taleSize/2,this.game.taleSize)
+            .setRectangle(this.game.taleSize / 2, this.game.taleSize)
             .setFixedRotation();
         this.createAnims();
         this.state = "starting";
@@ -298,9 +296,9 @@ export class Game extends Scene {
     staticGroupAddSpriteFromConfigIdx(grp: Phaser.GameObjects.Group, x: integer, y: integer, texture: string): Phaser.GameObjects.Sprite {
         let idxs = this.configIdx2drawIdx(x, y);
         let sprite = this.matter.add.sprite(idxs.x, idxs.y, texture)
-                .setSize(this.taleSize, this.taleSize)
-                .setDisplaySize(this.taleSize, this.taleSize)
-                .setStatic(true)
+            .setSize(this.taleSize, this.taleSize)
+            .setDisplaySize(this.taleSize, this.taleSize)
+            .setStatic(true)
         return sprite;
     }
 
@@ -353,17 +351,19 @@ export class Game extends Scene {
             this.staticGroupAddSpriteFromConfigIdx(this.gatesGroup, ele.x, ele.y, 'gate');
         });
         this.floorConfig.floors.forEach(ele => {
-            this.addImageFromConfigIdx(ele.x, ele.y, 'floor');
-            this.staticGroupAddRectangleFromConfigIdx(this.floorsGroup, ele.x, ele.y, this.taleSize, this.taleSize / 4);
+            let floor = new Floor({ game: this, x: ele.x, y: ele.y });
+            this.add.existing(floor);
         });
         this.floorConfig.blocks.forEach(ele => {
             let block = new Block({ game: this, x: ele.x, y: ele.y, direction: ele.d });
+            this.add.existing(block);
             block.sensor.forEach(ele => {
                 this.blocksGroup.add(ele);
             });
         });
         this.player = new Player({ game: this, x: this.floorConfig.indy.x, y: this.floorConfig.indy.y });
         this.player.power = this.floorConfig.power;
+        this.add.existing(this.player);
     }
 
     create() {
@@ -401,10 +401,6 @@ export class Game extends Scene {
             .setScrollFactor(0, 0);
 
         this.drawSprite();
-        // this.physics.add.collider(this.blocksGroup, this.floorsGroup);
-        // this.physics.add.collider(this.player, this.floorsGroup);
-        // this.physics.add.collider(this.player, this.wallGroup);
-        // this.physics.add.collider(this.player, this.blocksGroup);
         EventBus.emit('current-scene-ready', this);
     }
 
