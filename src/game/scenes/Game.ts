@@ -122,6 +122,8 @@ class Player extends Phaser.Physics.Matter.Sprite {
     power: integer;
     sensors: {
         bottom: MatterJS.BodyType;
+        leftSideBottom: MatterJS.BodyType;
+        rightSideBottom: MatterJS.BodyType;
     }
     floorBody: MatterJS.BodyType;
     blockedBottom: boolean;
@@ -134,19 +136,31 @@ class Player extends Phaser.Physics.Matter.Sprite {
         this
             .setDisplaySize(this.game.taleSize, this.game.taleSize)
             .setFixedRotation();
+        let sx = this.displayWidth / 2;
+        let sy = this.displayHeight / 2;
         this.sensors = {
             bottom: Matter.Bodies.rectangle(
-                this.displayWidth / 2 + 1, this.displayHeight + 2,
+                sx + 1, sy + this.displayHeight / 2 + 2,
                 this.displayWidth / 2 - 2, 1,
                 { isSensor: true, label: 'playerBottom' }),
+            leftSideBottom: Matter.Bodies.rectangle(
+                sx - this.displayWidth / 4, sy + this.displayHeight/4,
+                1, this.displayHeight / 2 - 2,
+                { isSensor: true, label: 'playerLeftSideBottom' }),
+            rightSideBottom: Matter.Bodies.rectangle(
+                sx + this.displayWidth / 4, sy + this.displayHeight/4,
+                1, this.displayHeight / 2 - 2,
+                { isSensor: true, label: 'playerRightSideBottom' }),
         };
         this.floorBody = Matter.Body.create({
             parts: [
                 Matter.Bodies.rectangle(
-                    this.displayWidth / 2, this.displayHeight / 2,
+                    sx, sy,
                     this.displayWidth / 2, this.displayHeight,
                     { isSensor: false, label: 'playerBody' }),
                 this.sensors.bottom,
+                this.sensors.leftSideBottom,
+                this.sensors.rightSideBottom,
             ]
         });
         this.setExistingBody(this.floorBody, true)
@@ -473,8 +487,8 @@ export class Game extends Scene {
                         (bodyA.label == 'playerBottom')
                         || (bodyB.label == 'playerBottom')) {
                         this.player.blockedBottom = true;
-                        console.log(bodyA.label + ' vs ' + bodyB.label);
                     }
+                    console.log(bodyA.label + ' vs ' + bodyB.label);
                 });
             })
     }
