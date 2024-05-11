@@ -2,6 +2,8 @@ import { EventBus } from '../EventBus';
 import { Scene } from 'phaser';
 import * as yaml from 'js-yaml';
 
+const Matter = Phaser.Physics.Matter.Matter;
+
 type FloorConfig = {
     name: string,
     height: integer,
@@ -39,6 +41,7 @@ class Block extends Phaser.Physics.Matter.Sprite {
     direction: "left" | "right";
     game: Game;
     sensor: Phaser.Physics.Matter.Sprite[];
+    floorBody: MatterJS.BodyType;
 
     constructor(config: { game: Game, x: integer, y: integer, direction: "left" | "right" }) {
         let idxs = config.game.configIdx2drawIdx(config.x, config.y);
@@ -47,9 +50,48 @@ class Block extends Phaser.Physics.Matter.Sprite {
         this.direction = config.direction;
         this
             .setDisplaySize(this.game.taleSize, this.game.taleSize)
+            .setStatic(true)
             .setFixedRotation();
+        this.floorBody = Matter.Body.create(
+            {
+                parts: [
+                    Matter.Bodies.rectangle(
+                        0,
+                        0,
+                        this.displayWidth,
+                        this.displayHeight,
+                        { isSensor: true, label: 'blockRect' },
+                    ),
+                    Matter.Bodies.rectangle(
+                        this.displayWidth / 4,
+                        this.displayHeight / 4,
+                        this.displayWidth / 2,
+                        this.displayHeight / 2,
+                        { isSensor: false, label: 'block' },
+                    ),
+                    Matter.Bodies.rectangle(
+                        - this.displayWidth / 4,
+                        this.displayHeight / 4,
+                        this.displayWidth / 2,
+                        this.displayHeight / 2,
+                        { isSensor: false, label: 'block' },
+                    ),
+                    Matter.Bodies.rectangle(
+                        this.direction == "right" ? this.displayWidth / 4 : - this.displayWidth / 4,
+                        - this.displayHeight / 4,
+                        this.displayWidth / 2,
+                        this.displayHeight / 2,
+                        { isSensor: false, label: 'block' },
+                    ),
+                ],
+            }
+        );
         this.sensor = [
         ];
+        this.setExistingBody(this.floorBody)
+            .setDisplayOrigin(this.displayWidth / 4, this.displayHeight / 4)
+            .setFixedRotation()
+            .setPosition(idxs.x, idxs.y);
     }
 }
 
@@ -72,7 +114,6 @@ class Player extends Phaser.Physics.Matter.Sprite {
         this
             .setDisplaySize(this.game.taleSize, this.game.taleSize)
             .setFixedRotation();
-        const Matter = Phaser.Physics.Matter.Matter;
         this.sensors = {
             bottom: Matter.Bodies.rectangle(
                 this.displayWidth / 2 + 1, this.displayHeight + 2,
@@ -85,12 +126,12 @@ class Player extends Phaser.Physics.Matter.Sprite {
                     this.displayWidth / 2, this.displayHeight / 2,
                     this.displayWidth / 2, this.displayHeight,
                     { isSensor: false, label: 'playerBody' }),
-                    this.sensors.bottom,
+                this.sensors.bottom,
             ]
         });
-        this.setExistingBody(this.floorBody,true)
+        this.setExistingBody(this.floorBody, true)
             .setFixedRotation()
-            .setPosition(idxs.x,idxs.y);
+            .setPosition(idxs.x, idxs.y);
         this.blockedBottom = true;
         this.createAnims();
         this.state = "starting";
