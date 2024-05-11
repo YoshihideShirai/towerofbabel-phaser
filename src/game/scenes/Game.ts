@@ -50,38 +50,57 @@ class Block extends Phaser.Physics.Matter.Sprite {
         this.direction = config.direction;
         this
             .setDisplaySize(this.game.taleSize, this.game.taleSize)
-            .setStatic(true)
-            .setFixedRotation();
+        let sx = this.displayWidth / 2;
+        let sy = this.displayHeight / 2;
         this.floorBody = Matter.Body.create(
             {
                 parts: [
                     Matter.Bodies.rectangle(
-                        0,
-                        0,
+                        sx,
+                        sy,
                         this.displayWidth,
                         this.displayHeight,
                         { isSensor: true, label: 'blockRect' },
                     ),
                     Matter.Bodies.rectangle(
-                        this.displayWidth / 4,
-                        this.displayHeight / 4,
+                        sx + this.displayWidth / 4,
+                        sy + this.displayHeight / 4,
                         this.displayWidth / 2,
                         this.displayHeight / 2,
                         { isSensor: false, label: 'block' },
                     ),
                     Matter.Bodies.rectangle(
-                        - this.displayWidth / 4,
-                        this.displayHeight / 4,
+                        sx - this.displayWidth / 4,
+                        sy + this.displayHeight / 4,
                         this.displayWidth / 2,
                         this.displayHeight / 2,
                         { isSensor: false, label: 'block' },
                     ),
                     Matter.Bodies.rectangle(
-                        this.direction == "right" ? this.displayWidth / 4 : - this.displayWidth / 4,
-                        - this.displayHeight / 4,
+                        sx + this.displayWidth / 4,
+                        sy - this.displayHeight / 4,
                         this.displayWidth / 2,
                         this.displayHeight / 2,
-                        { isSensor: false, label: 'block' },
+                        this.direction == "left" ? {
+                            isSensor: true,
+                            label: "blockEmpty",
+                        } : {
+                            isSensor: false,
+                            label: "block",
+                        },
+                    ),
+                    Matter.Bodies.rectangle(
+                        sx - this.displayWidth / 4,
+                        sy - this.displayHeight / 4,
+                        this.displayWidth / 2,
+                        this.displayHeight / 2,
+                        this.direction == "right" ? {
+                            isSensor: true,
+                            label: "blockEmpty",
+                        } : {
+                            isSensor: false,
+                            label: "block",
+                        },
                     ),
                 ],
             }
@@ -89,9 +108,10 @@ class Block extends Phaser.Physics.Matter.Sprite {
         this.sensor = [
         ];
         this.setExistingBody(this.floorBody)
-            .setDisplayOrigin(this.displayWidth / 4, this.displayHeight / 4)
+            .setStatic(true)
             .setFixedRotation()
             .setPosition(idxs.x, idxs.y);
+        console.log("block x:" + this.x + " y:" + this.y);
     }
 }
 
