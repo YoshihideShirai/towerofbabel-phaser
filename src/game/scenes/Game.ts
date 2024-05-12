@@ -56,13 +56,6 @@ class Block extends Phaser.Physics.Matter.Sprite {
             {
                 parts: [
                     Matter.Bodies.rectangle(
-                        sx,
-                        sy,
-                        this.displayWidth,
-                        this.displayHeight,
-                        { isSensor: true, label: 'blockRect' },
-                    ),
-                    Matter.Bodies.rectangle(
                         sx + this.displayWidth / 4,
                         sy + this.displayHeight / 4,
                         this.displayWidth / 2,
