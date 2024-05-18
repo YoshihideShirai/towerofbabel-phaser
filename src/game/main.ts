@@ -24,7 +24,8 @@ const config: Phaser.Types.Core.GameConfig = {
         default: 'matter',
         matter: {
             gravity: { x: 0, y: 0 },
-            debug: true
+            frictionNormalMultiplier: 0,
+            debug: true,
         },
     }
 };

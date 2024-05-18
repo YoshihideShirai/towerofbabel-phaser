@@ -109,7 +109,7 @@ class Block extends Phaser.Physics.Matter.Sprite {
 }
 
 class Player extends Phaser.Physics.Matter.Sprite {
-    state: "starting" | "goal" | "stand" | "lifting" | "lifted" | "walking" | "criming" | "falling" | "killed";
+    state: "starting" | "goal" | "stand" | "lifting" | "lifted" | "walking" | "steping" | "criming" | "falling" | "killed";
     direction: "left" | "right";
     game: Game;
     power: integer;
@@ -120,6 +120,8 @@ class Player extends Phaser.Physics.Matter.Sprite {
     }
     floorBody: MatterJS.BodyType;
     blockedBottom: boolean;
+    blockedLeftSideBottom: boolean;
+    blockedRightSideBottom: boolean;
 
     constructor(config: { game: Game, x: integer, y: integer }) {
         let idxs = config.game.configIdx2drawIdx(config.x, config.y);
@@ -133,15 +135,15 @@ class Player extends Phaser.Physics.Matter.Sprite {
         let sy = this.displayHeight / 2;
         this.sensors = {
             bottom: Matter.Bodies.rectangle(
-                sx + 1, sy + this.displayHeight / 2 + 2,
-                this.displayWidth / 2 - 2, 1,
+                sx, sy + this.displayHeight / 2 + 2,
+                this.displayWidth / 3, 1,
                 { isSensor: true, label: 'playerBottom' }),
             leftSideBottom: Matter.Bodies.rectangle(
-                sx - this.displayWidth / 4, sy + this.displayHeight/4,
+                sx - this.displayWidth / 6, sy + this.displayHeight / 4,
                 1, this.displayHeight / 2 - 2,
                 { isSensor: true, label: 'playerLeftSideBottom' }),
             rightSideBottom: Matter.Bodies.rectangle(
-                sx + this.displayWidth / 4, sy + this.displayHeight/4,
+                sx + this.displayWidth / 6, sy + this.displayHeight / 4,
                 1, this.displayHeight / 2 - 2,
                 { isSensor: true, label: 'playerRightSideBottom' }),
         };
@@ -149,7 +151,7 @@ class Player extends Phaser.Physics.Matter.Sprite {
             parts: [
                 Matter.Bodies.rectangle(
                     sx, sy,
-                    this.displayWidth / 2, this.displayHeight,
+                    this.displayWidth / 3, this.displayHeight,
                     { isSensor: false, label: 'playerBody' }),
                 this.sensors.bottom,
                 this.sensors.leftSideBottom,
@@ -160,6 +162,8 @@ class Player extends Phaser.Physics.Matter.Sprite {
             .setFixedRotation()
             .setPosition(idxs.x, idxs.y);
         this.blockedBottom = true;
+        this.blockedLeftSideBottom = false;
+        this.blockedRightSideBottom = false;
         this.createAnims();
         this.state = "starting";
         this.direction = "right";
@@ -244,6 +248,34 @@ class Player extends Phaser.Physics.Matter.Sprite {
             repeat: -1,
         });
         this.game.anims.create({
+            key: 'indy_right_steping0',
+            frames: [
+                { key: "indy_right_down0", duration: 200, visible: true },
+            ],
+            repeat: 1,
+        });
+        this.game.anims.create({
+            key: 'indy_right_steping1',
+            frames: [
+                { key: "indy_right_down1", duration: 200, visible: true },
+            ],
+            repeat: 1,
+        });
+        this.game.anims.create({
+            key: 'indy_left_steping0',
+            frames: [
+                { key: "indy_left_down0", duration: 200, visible: true },
+            ],
+            repeat: 1,
+        });
+        this.game.anims.create({
+            key: 'indy_left_steping1',
+            frames: [
+                { key: "indy_left_down1", duration: 200, visible: true },
+            ],
+            repeat: 1,
+        });
+        this.game.anims.create({
             key: 'indy_right_fall',
             frames: [
                 { key: "indy_right_fall0", duration: 100, visible: true },
@@ -263,17 +295,15 @@ class Player extends Phaser.Physics.Matter.Sprite {
 
     update() {
         if (this.isActive()) {
-            if (!this.blockedBottom) {
-                this.setVelocityY(1);
-            }
             if (this.isWalkable()) {
                 if (!this.blockedBottom) {
-                    this.setVelocityX(0);
+                    this.setVelocity(0, 1);
                     this.state = "falling";
                     this.play("indy_" + this.direction + "_fall");
                 }
             }
             if (this.state == "falling") {
+                this.setVelocity(0, 1);
                 if (this.blockedBottom) {
                     this.state = "stand";
                     this.play("indy_" + this.direction + "_stand");
@@ -292,12 +322,22 @@ class Player extends Phaser.Physics.Matter.Sprite {
             }
             this.state = "walking";
             this.direction = "right";
+            if (this.state == "walking" && this.direction == "right" && this.blockedRightSideBottom) {
+                this.state = "criming";
+                this.setVelocity(0, -3);
+                this.play("indy_right_steping0").once('animationcomplete', () => {
+                    this.setVelocity(3, 0);
+                    this.play("indy_right_steping1").once('animationcomplete', () => {
+                        this.state = "stand";
+                        this.play("indy_" + this.direction + "_stand");
+                    });
+                });
+            }
         }
     }
 
     keyLeftDown() {
         if (this.isWalkable()) {
-            super.setVelocityX(-1);
             if (this.state !== "walking" || this.direction !== "left") {
                 this.play("indy_left_start_walking").once('animationcomplete', () => {
                     this.play("indy_left_walking");
@@ -305,12 +345,25 @@ class Player extends Phaser.Physics.Matter.Sprite {
             }
             this.state = "walking";
             this.direction = "left";
+            if (this.state == "walking" && this.direction == "left" && this.blockedLeftSideBottom) {
+                this.state = "criming";
+                this.setVelocity(0, -3);
+                this.play("indy_left_steping0").once('animationcomplete', () => {
+                    this.setVelocity(-3, 0);
+                    this.play("indy_left_steping1").once('animationcomplete', () => {
+                        this.state = "stand";
+                        this.play("indy_" + this.direction + "_stand");
+                    });
+                });
+            } else {
+                super.setVelocityX(-1);
+            }
         }
     }
 
     nokeyDown() {
-        super.setVelocityX(0);
         if (this.state === "walking") {
+            super.setVelocityX(0);
             this.play("indy_" + this.direction + "_stand");
             this.state = "stand";
         }
@@ -468,6 +521,8 @@ export class Game extends Scene {
             Phaser.Physics.Matter.Events.BEFORE_UPDATE,
             (event: Phaser.Physics.Matter.Events.BeforeUpdateEvent) => {
                 this.player.blockedBottom = false;
+                this.player.blockedLeftSideBottom = false;
+                this.player.blockedRightSideBottom = false;
             }
         )
         this.matter.world.on(
@@ -479,7 +534,32 @@ export class Game extends Scene {
                     if (
                         (bodyA.label == 'playerBottom')
                         || (bodyB.label == 'playerBottom')) {
-                        this.player.blockedBottom = true;
+                        if (
+                            (bodyA.label == 'block') || (bodyB.label == 'block')
+                            || (bodyA.label == 'floor') || (bodyB.label == 'floor')
+                        ) {
+                            this.player.blockedBottom = true;
+                        }
+                    }
+                    if (
+                        (bodyA.label == 'playerLeftSideBottom')
+                        || (bodyB.label == 'playerLeftSideBottom')) {
+                        if (
+                            (bodyA.label == 'block') || (bodyB.label == 'block')
+                            || (bodyA.label == 'floor') || (bodyB.label == 'floor')
+                        ) {
+                            this.player.blockedLeftSideBottom = true;
+                        }
+                    }
+                    if (
+                        (bodyA.label == 'playerRightSideBottom')
+                        || (bodyB.label == 'playerRightSideBottom')) {
+                        if (
+                            (bodyA.label == 'block') || (bodyB.label == 'block')
+                            || (bodyA.label == 'floor') || (bodyB.label == 'floor')
+                        ) {
+                            this.player.blockedRightSideBottom = true;
+                        }
                     }
                     console.log(bodyA.label + ' vs ' + bodyB.label);
                 });
