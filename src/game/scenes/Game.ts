@@ -2,6 +2,8 @@ import { EventBus } from '../EventBus';
 import { Scene } from 'phaser';
 import * as yaml from 'js-yaml';
 
+const Matter = Phaser.Physics.Matter.Matter;
+
 type FloorConfig = {
     name: string,
     height: integer,
@@ -18,61 +20,153 @@ type TowerConfig = {
     floors: FloorConfig[],
 }
 
-class Block extends Phaser.Physics.Arcade.Sprite {
-    direction: "left" | "right";
+class Floor extends Phaser.Physics.Matter.Sprite {
     game: Game;
-    sensor: Phaser.Physics.Arcade.Sprite[];
-
-    constructor(config: { game: Game, x: integer, y: integer, direction: "left" | "right" }) {
-        let idxs = config.game.configIdx2drawIdx(config.x, config.y);
-        super(config.game, idxs.x, idxs.y, "block_" + config.direction);
-        this.game = config.game;
-        this.direction = config.direction;
-        this.game.add.existing(this);
-        this.game.physics.add.existing(this, false);
-        this.setDisplaySize(this.game.taleSize, this.game.taleSize);
-
-        this.sensor = [
-            this.game.physics.add.sprite(
-                idxs.x + this.game.taleSize / 4,
-                idxs.y + this.game.taleSize / 4,
-                "blank")
-                .setAlpha(0.5)
-                .setPushable(false),
-            this.game.physics.add.sprite(
-                idxs.x - this.game.taleSize / 4,
-                idxs.y + this.game.taleSize / 4,
-                "blank")
-                .setAlpha(0.5)
-                .setPushable(false),
-            this.game.physics.add.sprite(
-                this.direction == "left" ? idxs.x - this.game.taleSize / 4 : idxs.x + this.game.taleSize / 4,
-                idxs.y - this.game.taleSize / 4,
-                "blank")
-                .setAlpha(0.5)
-                .setPushable(false),
-        ];
-    }
-}
-
-class Player extends Phaser.Physics.Arcade.Sprite {
-    state: "starting" | "goal" | "stand" | "lifting" | "lifted" | "walking" | "criming" | "falling" | "killed";
-    direction: "left" | "right" | "center";
-    game: Game;
-    power: integer;
 
     constructor(config: { game: Game, x: integer, y: integer }) {
         let idxs = config.game.configIdx2drawIdx(config.x, config.y);
-        super(config.game, idxs.x, idxs.y, "indy_start0");
+        super(config.game.matter.world, idxs.x, idxs.y, "floor");
+        this.game = config.game;
+        this
+            .setDisplaySize(this.game.taleSize, this.game.taleSize / 4)
+            .setY(idxs.y - this.game.taleSize / 2 + this.displayHeight / 2)
+            .setRectangle(this.displayWidth, this.displayHeight, {
+                label: 'floor',
+            })
+            .setStatic(true);
+    }
+}
+
+class Block extends Phaser.Physics.Matter.Sprite {
+    direction: "left" | "right";
+    game: Game;
+    sensor: Phaser.Physics.Matter.Sprite[];
+    floorBody: MatterJS.BodyType;
+
+    constructor(config: { game: Game, x: integer, y: integer, direction: "left" | "right" }) {
+        let idxs = config.game.configIdx2drawIdx(config.x, config.y);
+        super(config.game.matter.world, idxs.x, idxs.y, "block_" + config.direction);
+        this.game = config.game;
+        this.direction = config.direction;
+        this
+            .setDisplaySize(this.game.taleSize, this.game.taleSize)
+        let sx = this.displayWidth / 2;
+        let sy = this.displayHeight / 2;
+        this.floorBody = Matter.Body.create(
+            {
+                parts: [
+                    Matter.Bodies.rectangle(
+                        sx + this.displayWidth / 4,
+                        sy + this.displayHeight / 4,
+                        this.displayWidth / 2,
+                        this.displayHeight / 2,
+                        { isSensor: false, label: 'block' },
+                    ),
+                    Matter.Bodies.rectangle(
+                        sx - this.displayWidth / 4,
+                        sy + this.displayHeight / 4,
+                        this.displayWidth / 2,
+                        this.displayHeight / 2,
+                        { isSensor: false, label: 'block' },
+                    ),
+                    Matter.Bodies.rectangle(
+                        sx + this.displayWidth / 4,
+                        sy - this.displayHeight / 4,
+                        this.displayWidth / 2,
+                        this.displayHeight / 2,
+                        this.direction == "left" ? {
+                            isSensor: true,
+                            label: "blockEmpty",
+                        } : {
+                            isSensor: false,
+                            label: "block",
+                        },
+                    ),
+                    Matter.Bodies.rectangle(
+                        sx - this.displayWidth / 4,
+                        sy - this.displayHeight / 4,
+                        this.displayWidth / 2,
+                        this.displayHeight / 2,
+                        this.direction == "right" ? {
+                            isSensor: true,
+                            label: "blockEmpty",
+                        } : {
+                            isSensor: false,
+                            label: "block",
+                        },
+                    ),
+                ],
+            }
+        );
+        this.sensor = [
+        ];
+        this.setExistingBody(this.floorBody)
+            .setStatic(true)
+            .setFixedRotation()
+            .setPosition(idxs.x, idxs.y);
+        console.log("block x:" + this.x + " y:" + this.y);
+    }
+}
+
+class Player extends Phaser.Physics.Matter.Sprite {
+    state: "starting" | "goal" | "stand" | "lifting" | "lifted" | "walking" | "steping" | "criming" | "falling" | "killed";
+    direction: "left" | "right";
+    game: Game;
+    power: integer;
+    sensors: {
+        bottom: MatterJS.BodyType;
+        leftSideBottom: MatterJS.BodyType;
+        rightSideBottom: MatterJS.BodyType;
+    }
+    floorBody: MatterJS.BodyType;
+    blockedBottom: boolean;
+    blockedLeftSideBottom: boolean;
+    blockedRightSideBottom: boolean;
+
+    constructor(config: { game: Game, x: integer, y: integer }) {
+        let idxs = config.game.configIdx2drawIdx(config.x, config.y);
+        super(config.game.matter.world, 0, 0, "indy_start0");
         this.power = 0;
         this.game = config.game;
-        this.game.add.existing(this);
-        this.game.physics.add.existing(this, false);
-        this.setBodySize(this.game.taleSize / 4, this.game.taleSize / 2);
-        this.setDisplaySize(this.game.taleSize, this.game.taleSize);
+        this
+            .setDisplaySize(this.game.taleSize, this.game.taleSize)
+            .setFixedRotation();
+        let sx = this.displayWidth / 2;
+        let sy = this.displayHeight / 2;
+        this.sensors = {
+            bottom: Matter.Bodies.rectangle(
+                sx, sy + this.displayHeight / 2 + 2,
+                this.displayWidth / 3, 1,
+                { isSensor: true, label: 'playerBottom' }),
+            leftSideBottom: Matter.Bodies.rectangle(
+                sx - this.displayWidth / 6, sy + this.displayHeight / 4,
+                1, this.displayHeight / 2 - 2,
+                { isSensor: true, label: 'playerLeftSideBottom' }),
+            rightSideBottom: Matter.Bodies.rectangle(
+                sx + this.displayWidth / 6, sy + this.displayHeight / 4,
+                1, this.displayHeight / 2 - 2,
+                { isSensor: true, label: 'playerRightSideBottom' }),
+        };
+        this.floorBody = Matter.Body.create({
+            parts: [
+                Matter.Bodies.rectangle(
+                    sx, sy,
+                    this.displayWidth / 3, this.displayHeight,
+                    { isSensor: false, label: 'playerBody' }),
+                this.sensors.bottom,
+                this.sensors.leftSideBottom,
+                this.sensors.rightSideBottom,
+            ]
+        });
+        this.setExistingBody(this.floorBody, true)
+            .setFixedRotation()
+            .setPosition(idxs.x, idxs.y);
+        this.blockedBottom = true;
+        this.blockedLeftSideBottom = false;
+        this.blockedRightSideBottom = false;
         this.createAnims();
         this.state = "starting";
-        this.direction = "center";
+        this.direction = "right";
         this.play('indy_starting').once('animationcomplete', () => {
             this.state = "stand";
         });
@@ -85,6 +179,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
                 { key: "indy_start0", duration: 1000, visible: true },
                 { key: "indy_start1", duration: 1000, visible: true },
                 { key: "indy_start2", duration: 1000, visible: true },
+                { key: "indy_start3", duration: 0, visible: true },
             ],
         });
         this.game.anims.create({
@@ -153,6 +248,34 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             repeat: -1,
         });
         this.game.anims.create({
+            key: 'indy_right_steping0',
+            frames: [
+                { key: "indy_right_down0", duration: 100, visible: true },
+            ],
+            repeat: 1,
+        });
+        this.game.anims.create({
+            key: 'indy_right_steping1',
+            frames: [
+                { key: "indy_right_down1", duration: 100, visible: true },
+            ],
+            repeat: 1,
+        });
+        this.game.anims.create({
+            key: 'indy_left_steping0',
+            frames: [
+                { key: "indy_left_down0", duration: 100, visible: true },
+            ],
+            repeat: 1,
+        });
+        this.game.anims.create({
+            key: 'indy_left_steping1',
+            frames: [
+                { key: "indy_left_down1", duration: 100, visible: true },
+            ],
+            repeat: 1,
+        });
+        this.game.anims.create({
             key: 'indy_right_fall',
             frames: [
                 { key: "indy_right_fall0", duration: 100, visible: true },
@@ -172,24 +295,26 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 
     update() {
         if (this.isActive()) {
-            this.setVelocityY(200);
             if (this.isWalkable()) {
-                if (!this.body?.touching.down) {
-                    this.setVelocityX(0);
+                if (!this.blockedBottom) {
+                    this.setVelocity(0, 1);
                     this.state = "falling";
                     this.play("indy_" + this.direction + "_fall");
                 }
             }
             if (this.state == "falling") {
-                this.state = "stand";
-                this.play("indy_" + this.direction + "_stand");
+                this.setVelocity(0, 1);
+                if (this.blockedBottom) {
+                    this.state = "stand";
+                    this.play("indy_" + this.direction + "_stand");
+                }
             }
         }
     }
 
     keyRightDown() {
         if (this.isWalkable()) {
-            super.setVelocityX(300);
+            super.setVelocityX(1);
             if (this.state !== "walking" || this.direction !== "right") {
                 this.play("indy_right_start_walking").once('animationcomplete', () => {
                     this.play("indy_right_walking");
@@ -197,12 +322,22 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             }
             this.state = "walking";
             this.direction = "right";
+            if (this.state == "walking" && this.direction == "right" && this.blockedRightSideBottom) {
+                this.state = "criming";
+                this.y -= 32;
+                this.play("indy_right_steping0").once('animationcomplete', () => {
+                    this.x += 32;
+                    this.play("indy_right_steping1").once('animationcomplete', () => {
+                        this.state = "stand";
+                        this.play("indy_" + this.direction + "_stand");
+                    });
+                });
+            }
         }
     }
 
     keyLeftDown() {
         if (this.isWalkable()) {
-            super.setVelocityX(-300);
             if (this.state !== "walking" || this.direction !== "left") {
                 this.play("indy_left_start_walking").once('animationcomplete', () => {
                     this.play("indy_left_walking");
@@ -210,12 +345,25 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             }
             this.state = "walking";
             this.direction = "left";
+            if (this.state == "walking" && this.direction == "left" && this.blockedLeftSideBottom) {
+                this.state = "criming";
+                this.y -= 32;
+                this.play("indy_left_steping0").once('animationcomplete', () => {
+                    this.x -= 32;
+                    this.play("indy_left_steping1").once('animationcomplete', () => {
+                        this.state = "stand";
+                        this.play("indy_" + this.direction + "_stand");
+                    });
+                });
+            } else {
+                super.setVelocityX(-1);
+            }
         }
     }
 
     nokeyDown() {
-        super.setVelocityX(0);
         if (this.state === "walking") {
+            super.setVelocityX(0);
             this.play("indy_" + this.direction + "_stand");
             this.state = "stand";
         }
@@ -254,11 +402,11 @@ export class Game extends Scene {
     floorHeight: integer;
     taleSize: integer;
 
-    wallGroup: Phaser.Physics.Arcade.StaticGroup;
-    gatesGroup: Phaser.Physics.Arcade.StaticGroup;
-    ivysGroup: Phaser.Physics.Arcade.StaticGroup;
-    floorsGroup: Phaser.Physics.Arcade.StaticGroup;
-    blocksGroup: Phaser.Physics.Arcade.Group;
+    wallGroup: Phaser.GameObjects.Group;
+    gatesGroup: Phaser.GameObjects.Group;
+    ivysGroup: Phaser.GameObjects.Group;
+    floorsGroup: Phaser.GameObjects.Group;
+    blocksGroup: Phaser.GameObjects.Group;
 
     player: Player;
 
@@ -284,33 +432,35 @@ export class Game extends Scene {
         return { x: (2 + x) * this.taleSize / 2, y: (2 + y) * this.taleSize / 2 };
     }
 
-    addSpriteFromConfigIdx(x: integer, y: integer, texture: string): Phaser.Physics.Arcade.Sprite {
+    addSpriteFromConfigIdx(x: integer, y: integer, texture: string): Phaser.Physics.Matter.Sprite {
         let idxs = this.configIdx2drawIdx(x, y);
-        return this.physics.add.sprite(idxs.x, idxs.y, texture)
+        return this.matter.add.sprite(idxs.x, idxs.y, texture)
             .setDisplaySize(this.taleSize, this.taleSize);
     }
 
     addImageFromConfigIdx(x: integer, y: integer, texture: string): Phaser.GameObjects.Image {
         let idxs = this.configIdx2drawIdx(x, y);
-        return this.add.image(idxs.x, idxs.y, texture)
+        return this.matter.add.image(idxs.x, idxs.y, texture)
             .setSize(this.taleSize, this.taleSize)
-            .setDisplaySize(this.taleSize, this.taleSize);
+            .setDisplaySize(this.taleSize, this.taleSize).setStatic(true);
     }
 
-    staticGroupAddSpriteFromConfigIdx(grp: Phaser.Physics.Arcade.StaticGroup, x: integer, y: integer, texture: string): Phaser.GameObjects.Sprite {
+    staticGroupAddSpriteFromConfigIdx(grp: Phaser.GameObjects.Group, x: integer, y: integer, texture: string): Phaser.GameObjects.Sprite {
+        let idxs = this.configIdx2drawIdx(x, y);
+        let sprite = this.matter.add.sprite(idxs.x, idxs.y, texture)
+            .setSize(this.taleSize, this.taleSize)
+            .setDisplaySize(this.taleSize, this.taleSize)
+            .setStatic(true)
+        return sprite;
+    }
+
+    groupAddSpriteFromConfigIdx(grp: Phaser.GameObjects.Group, x: integer, y: integer, texture: string): Phaser.GameObjects.Sprite {
         let idxs = this.configIdx2drawIdx(x, y);
         return grp.create(idxs.x, idxs.y, texture)
-            .setSize(this.taleSize, this.taleSize)
             .setDisplaySize(this.taleSize, this.taleSize);
     }
 
-    groupAddSpriteFromConfigIdx(grp: Phaser.Physics.Arcade.Group, x: integer, y: integer, texture: string): Phaser.GameObjects.Sprite {
-        let idxs = this.configIdx2drawIdx(x, y);
-        return grp.create(idxs.x, idxs.y, texture)
-            .setDisplaySize(this.taleSize, this.taleSize);
-    }
-
-    staticGroupAddRectangleFromConfigIdx(grp: Phaser.Physics.Arcade.StaticGroup, x: integer, y: integer, width: integer, height: integer): Phaser.GameObjects.Rectangle {
+    staticGroupAddRectangleFromConfigIdx(grp: Phaser.GameObjects.Group, x: integer, y: integer, width: integer, height: integer): Phaser.GameObjects.Rectangle {
         let idxs = this.configIdx2drawIdx(x, y);
         let sensor = this.add.rectangle(
             idxs.x - (this.taleSize - width) / 2,
@@ -353,33 +503,83 @@ export class Game extends Scene {
             this.staticGroupAddSpriteFromConfigIdx(this.gatesGroup, ele.x, ele.y, 'gate');
         });
         this.floorConfig.floors.forEach(ele => {
-            this.addImageFromConfigIdx(ele.x, ele.y, 'floor');
-            this.staticGroupAddRectangleFromConfigIdx(this.floorsGroup, ele.x, ele.y, this.taleSize, this.taleSize / 4);
+            let floor = new Floor({ game: this, x: ele.x, y: ele.y });
+            this.add.existing(floor);
         });
         this.floorConfig.blocks.forEach(ele => {
             let block = new Block({ game: this, x: ele.x, y: ele.y, direction: ele.d });
+            this.add.existing(block);
             block.sensor.forEach(ele => {
                 this.blocksGroup.add(ele);
             });
         });
         this.player = new Player({ game: this, x: this.floorConfig.indy.x, y: this.floorConfig.indy.y });
         this.player.power = this.floorConfig.power;
+        this.add.existing(this.player);
+
+        this.matter.world.on(
+            Phaser.Physics.Matter.Events.BEFORE_UPDATE,
+            (event: Phaser.Physics.Matter.Events.BeforeUpdateEvent) => {
+                this.player.blockedBottom = false;
+                this.player.blockedLeftSideBottom = false;
+                this.player.blockedRightSideBottom = false;
+            }
+        )
+        this.matter.world.on(
+            Phaser.Physics.Matter.Events.COLLISION_ACTIVE,
+            (event: Phaser.Physics.Matter.Events.CollisionActiveEvent) => {
+                event.pairs.forEach(ele => {
+                    const bodyA = ele.bodyA;
+                    const bodyB = ele.bodyB;
+                    if (
+                        (bodyA.label == 'playerBottom')
+                        || (bodyB.label == 'playerBottom')) {
+                        if (
+                            (bodyA.label == 'block') || (bodyB.label == 'block')
+                            || (bodyA.label == 'floor') || (bodyB.label == 'floor')
+                        ) {
+                            this.player.blockedBottom = true;
+                        }
+                    }
+                    if (
+                        (bodyA.label == 'playerLeftSideBottom')
+                        || (bodyB.label == 'playerLeftSideBottom')) {
+                        if (
+                            (bodyA.label == 'block') || (bodyB.label == 'block')
+                            || (bodyA.label == 'floor') || (bodyB.label == 'floor')
+                        ) {
+                            this.player.blockedLeftSideBottom = true;
+                        }
+                    }
+                    if (
+                        (bodyA.label == 'playerRightSideBottom')
+                        || (bodyB.label == 'playerRightSideBottom')) {
+                        if (
+                            (bodyA.label == 'block') || (bodyB.label == 'block')
+                            || (bodyA.label == 'floor') || (bodyB.label == 'floor')
+                        ) {
+                            this.player.blockedRightSideBottom = true;
+                        }
+                    }
+                    console.log(bodyA.label + ' vs ' + bodyB.label);
+                });
+            })
     }
 
     create() {
-        this.wallGroup = this.physics.add.staticGroup({
+        this.wallGroup = this.add.group({
             key: 'wallGroup'
         });
-        this.gatesGroup = this.physics.add.staticGroup({
+        this.gatesGroup = this.add.group({
             key: 'gatesGroup'
         });
-        this.ivysGroup = this.physics.add.staticGroup({
+        this.ivysGroup = this.add.group({
             key: 'ivysGroup'
         });
-        this.floorsGroup = this.physics.add.staticGroup({
+        this.floorsGroup = this.add.group({
             key: 'floorsGroup'
         });
-        this.blocksGroup = this.physics.add.group({
+        this.blocksGroup = this.add.group({
             key: 'blocksGroup'
         });
         this.fetchFloorData();
@@ -401,10 +601,6 @@ export class Game extends Scene {
             .setScrollFactor(0, 0);
 
         this.drawSprite();
-        this.physics.add.collider(this.blocksGroup, this.floorsGroup);
-        this.physics.add.collider(this.player, this.floorsGroup);
-        this.physics.add.collider(this.player, this.wallGroup);
-        this.physics.add.collider(this.player, this.blocksGroup);
         EventBus.emit('current-scene-ready', this);
     }
 
