@@ -250,28 +250,28 @@ class Player extends Phaser.Physics.Matter.Sprite {
         this.game.anims.create({
             key: 'indy_right_steping0',
             frames: [
-                { key: "indy_right_down0", duration: 200, visible: true },
+                { key: "indy_right_down0", duration: 100, visible: true },
             ],
             repeat: 1,
         });
         this.game.anims.create({
             key: 'indy_right_steping1',
             frames: [
-                { key: "indy_right_down1", duration: 200, visible: true },
+                { key: "indy_right_down1", duration: 100, visible: true },
             ],
             repeat: 1,
         });
         this.game.anims.create({
             key: 'indy_left_steping0',
             frames: [
-                { key: "indy_left_down0", duration: 200, visible: true },
+                { key: "indy_left_down0", duration: 100, visible: true },
             ],
             repeat: 1,
         });
         this.game.anims.create({
             key: 'indy_left_steping1',
             frames: [
-                { key: "indy_left_down1", duration: 200, visible: true },
+                { key: "indy_left_down1", duration: 100, visible: true },
             ],
             repeat: 1,
         });
@@ -324,9 +324,9 @@ class Player extends Phaser.Physics.Matter.Sprite {
             this.direction = "right";
             if (this.state == "walking" && this.direction == "right" && this.blockedRightSideBottom) {
                 this.state = "criming";
-                this.setVelocity(0, -3);
+                this.y -= 32;
                 this.play("indy_right_steping0").once('animationcomplete', () => {
-                    this.setVelocity(3, 0);
+                    this.x += 32;
                     this.play("indy_right_steping1").once('animationcomplete', () => {
                         this.state = "stand";
                         this.play("indy_" + this.direction + "_stand");
@@ -347,9 +347,9 @@ class Player extends Phaser.Physics.Matter.Sprite {
             this.direction = "left";
             if (this.state == "walking" && this.direction == "left" && this.blockedLeftSideBottom) {
                 this.state = "criming";
-                this.setVelocity(0, -3);
+                this.y -= 32;
                 this.play("indy_left_steping0").once('animationcomplete', () => {
-                    this.setVelocity(-3, 0);
+                    this.x -= 32;
                     this.play("indy_left_steping1").once('animationcomplete', () => {
                         this.state = "stand";
                         this.play("indy_" + this.direction + "_stand");
